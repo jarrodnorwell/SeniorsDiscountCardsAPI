@@ -4,32 +4,22 @@ import Vapor
 struct DiscountController : RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let discount = routes.grouped("discount")
-        discount.post(use: create)
         discount.group(":id") { discount in
-            discount.get(use: getId)
-            discount.delete(use: delete)
+            discount.get(use: getIdentifier)
         }
+        discount.post(use: post)
     }
 
-    func create(req: Request) async throws -> Discount {
-        let discount = try req.content.decode(Discount.self)
-        try await discount.save(on: req.db)
-        return discount
-    }
-
-    func delete(req: Request) async throws -> HTTPStatus {
+    func getIdentifier(req: Request) async throws -> Discount {
         guard let discount = try await Discount.find(req.parameters.get("id"), on: req.db) else {
             throw Abort(.notFound)
         }
-        try await discount.delete(on: req.db)
-        return .noContent
+        return discount
     }
 
-    fileprivate func getId(request: Request) async throws -> Discount {
-        guard let discount = try await Discount.find(request.parameters.get("id"), on: request.db) else {
-            throw Abort(.notFound)
-        }
-
+    func post(req: Request) async throws -> Discount {
+        let discount = try req.content.decode(Discount.self)
+        try await discount.save(on: req.db)
         return discount
     }
 }
